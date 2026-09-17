@@ -1,0 +1,6 @@
+{
+  "name": "Cyber Runner 2099",
+  "description": "A high-octane 3-lane cyberpunk endless runner with pseudo-3D neon visuals, procedural Web Audio synthwave BGM and SFX, and Overdrive mechanics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

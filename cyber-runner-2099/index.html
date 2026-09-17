@@ -1,0 +1,2292 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Cyber Runner 2099</title>
+    <meta name="description" content="A high-octane 3-lane cyberpunk endless runner with pseudo-3D neon visuals, procedural Web Audio synthwave BGM and SFX, and Overdrive mechanics." />
+    <meta property="og:title" content="Cyber Runner 2099" />
+    <meta property="og:description" content="A high-octane 3-lane cyberpunk endless runner with pseudo-3D neon visuals, procedural Web Audio synthwave BGM and SFX, and Overdrive mechanics." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Google Fonts for Authentic Cyberpunk & Sci-Fi HUD -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              orbitron: ['Orbitron', 'sans-serif'],
+              rajdhani: ['Rajdhani', 'sans-serif'],
+            },
+            colors: {
+              cyber: {
+                dark: '#070814',
+                darker: '#03040a',
+                cyan: '#00f3ff',
+                magenta: '#ff007f',
+                yellow: '#ffe600',
+                purple: '#9d00ff',
+                green: '#00ff66',
+                border: '#1b223c',
+              }
+            },
+            boxShadow: {
+              'neon-cyan': '0 0 15px rgba(0, 243, 255, 0.6), 0 0 30px rgba(0, 243, 255, 0.2)',
+              'neon-magenta': '0 0 15px rgba(255, 0, 127, 0.6), 0 0 30px rgba(255, 0, 127, 0.2)',
+              'neon-gold': '0 0 15px rgba(255, 230, 0, 0.7), 0 0 30px rgba(255, 230, 0, 0.3)',
+              'cabinet': '0 0 40px rgba(0, 243, 255, 0.25), 0 0 80px rgba(157, 0, 255, 0.15)',
+            },
+            keyframes: {
+              glowPulse: {
+                '0%, 100%': { filter: 'drop-shadow(0 0 8px #00f3ff)' },
+                '50%': { filter: 'drop-shadow(0 0 18px #ff007f)' },
+              },
+              overdrivePulse: {
+                '0%, 100%': { transform: 'scale(1)', boxShadow: '0 0 20px #ff007f, inset 0 0 15px #ffe600' },
+                '50%': { transform: 'scale(1.05)', boxShadow: '0 0 35px #ffe600, inset 0 0 25px #ff007f' },
+              },
+              scanline: {
+                '0%': { transform: 'translateY(-100%)' },
+                '100%': { transform: 'translateY(1000%)' },
+              }
+            },
+            animation: {
+              'glow-pulse': 'glowPulse 2.5s infinite ease-in-out',
+              'overdrive-btn': 'overdrivePulse 1s infinite ease-in-out',
+              'scanline': 'scanline 8s linear infinite',
+            }
+          }
+        }
+      }
+    </script>
+
+    <style>
+      * {
+        box-sizing: border-box;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+      }
+      body {
+        background-color: #03040a;
+        font-family: 'Rajdhani', sans-serif;
+        overflow: hidden;
+        touch-action: manipulation;
+      }
+      .font-cyber {
+        font-family: 'Orbitron', monospace;
+      }
+      /* Scanline CRT overlay */
+      .crt-scanlines {
+        background: linear-gradient(
+          rgba(18, 16, 16, 0) 50%, 
+          rgba(0, 0, 0, 0.25) 50%
+        ), linear-gradient(
+          90deg,
+          rgba(255, 0, 0, 0.04),
+          rgba(0, 255, 0, 0.02),
+          rgba(0, 0, 255, 0.04)
+        );
+        background-size: 100% 4px, 6px 100%;
+        pointer-events: none;
+      }
+      /* Cyberpunk Glitch Effect on Title */
+      .glitch {
+        position: relative;
+        text-shadow: 0 0 10px #00f3ff, 0 0 20px #00f3ff;
+      }
+      .glitch::before, .glitch::after {
+        content: attr(data-text);
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        clip: rect(0, 0, 0, 0);
+      }
+      .glitch::before {
+        left: -2px;
+        text-shadow: 2px 0 #ff007f;
+        animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
+      }
+      .glitch::after {
+        left: 2px;
+        text-shadow: -2px 0 #00f3ff;
+        animation: glitch-anim-2 3s infinite linear alternate-reverse;
+      }
+      @keyframes glitch-anim-1 {
+        0% { clip: rect(20px, 9999px, 35px, 0); }
+        20% { clip: rect(65px, 9999px, 80px, 0); }
+        40% { clip: rect(10px, 9999px, 30px, 0); }
+        60% { clip: rect(45px, 9999px, 60px, 0); }
+        80% { clip: rect(80px, 9999px, 95px, 0); }
+        100% { clip: rect(15px, 9999px, 40px, 0); }
+      }
+      @keyframes glitch-anim-2 {
+        0% { clip: rect(60px, 9999px, 85px, 0); }
+        20% { clip: rect(15px, 9999px, 30px, 0); }
+        40% { clip: rect(75px, 9999px, 90px, 0); }
+        60% { clip: rect(30px, 9999px, 50px, 0); }
+        80% { clip: rect(5px, 9999px, 25px, 0); }
+        100% { clip: rect(50px, 9999px, 70px, 0); }
+      }
+    </style>
+  </head>
+  <body class="w-screen h-screen flex items-center justify-center bg-[#03040a] relative select-none">
+    
+    <!-- Outer Ambient Background with Synthwave Grid and Vignette -->
+    <div class="fixed inset-0 pointer-events-none opacity-40 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#170e36] via-[#090b1c] to-[#020307]"></div>
+    <div class="fixed inset-0 pointer-events-none opacity-15" style="background-image: linear-gradient(#00f3ff 1px, transparent 1px), linear-gradient(90deg, #00f3ff 1px, transparent 1px); background-size: 50px 50px;"></div>
+
+    <!-- MAIN GAME CABINET / SMARTPHONE FRAME (9:16 Portrait Layout) -->
+    <div id="gameCabinet" class="relative w-full max-w-[450px] h-full sm:h-[96vh] sm:max-h-[880px] bg-[#070814] sm:rounded-2xl border sm:border-2 border-[#00f3ff]/40 shadow-cabinet overflow-hidden flex flex-col justify-between">
+      
+      <!-- Top HUD Header -->
+      <header id="topHud" class="relative z-20 w-full px-4 pt-3 pb-2 flex items-center justify-between bg-gradient-to-b from-[#070814]/90 to-transparent border-b border-[#00f3ff]/15">
+        <!-- Score & Multiplier -->
+        <div class="flex flex-col">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] tracking-widest text-[#00f3ff]/70 font-cyber font-bold uppercase">SCORE</span>
+            <span id="multiplierBadge" class="text-[10px] font-cyber font-black px-1.5 py-0.5 rounded bg-[#ff007f]/20 border border-[#ff007f] text-[#ff007f] transition-all">x1</span>
+          </div>
+          <div id="scoreDisplay" class="font-cyber font-black text-2xl text-white tracking-wider drop-shadow-[0_0_8px_#00f3ff]">000000</div>
+        </div>
+
+        <!-- Distance & Speed Level -->
+        <div class="flex flex-col items-center">
+          <span class="text-[10px] tracking-widest text-amber-400/80 font-cyber font-bold uppercase">DISTANCE</span>
+          <div id="distanceDisplay" class="font-cyber font-bold text-lg text-amber-300 tracking-wide drop-shadow-[0_0_6px_#ffe600]">0m</div>
+        </div>
+
+        <!-- Utility Buttons (Mute + Pause) -->
+        <div class="flex items-center gap-2">
+          <button id="btnMute" class="w-9 h-9 rounded-lg bg-[#0e1226] border border-[#00f3ff]/40 text-[#00f3ff] flex items-center justify-center hover:bg-[#00f3ff]/20 active:scale-95 transition-all" title="Toggle Audio (M)">
+            <svg id="iconSoundOn" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+            </svg>
+            <svg id="iconSoundOff" class="w-5 h-5 hidden text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+            </svg>
+          </button>
+          
+          <button id="btnPause" class="w-9 h-9 rounded-lg bg-[#0e1226] border border-[#00f3ff]/40 text-[#00f3ff] flex items-center justify-center hover:bg-[#00f3ff]/20 active:scale-95 transition-all" title="Pause Game (ESC)">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 9v6m4-6v6" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Center Gameplay Canvas Area -->
+      <div id="canvasContainer" class="relative flex-1 w-full h-full overflow-hidden">
+        <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+        
+        <!-- CRT Scanline layer for retro arcade feel -->
+        <div class="crt-scanlines absolute inset-0 z-10 pointer-events-none opacity-40"></div>
+
+        <!-- Floating Announcement Banner (e.g. OVERDRIVE READY, SPEED UP) -->
+        <div id="announcementBanner" class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none opacity-0 transition-opacity duration-300 text-center font-cyber font-black tracking-widest text-lg px-4 py-1.5 rounded border border-white/40 shadow-2xl">
+          SPEED UP!
+        </div>
+      </div>
+
+      <!-- Bottom HUD & Controls -->
+      <footer id="bottomHud" class="relative z-20 w-full px-4 pt-2 pb-4 bg-gradient-to-t from-[#070814] via-[#070814]/95 to-transparent border-t border-[#00f3ff]/15 flex flex-col gap-2.5">
+        
+        <!-- Energy / Overdrive Gauge -->
+        <div class="w-full flex flex-col gap-1">
+          <div class="flex items-center justify-between text-[11px] font-cyber font-bold tracking-wider">
+            <span class="text-[#00f3ff] flex items-center gap-1">
+              <span class="inline-block w-2 h-2 rounded-full bg-[#00f3ff] animate-ping"></span>
+              OVERDRIVE ENERGY
+            </span>
+            <span id="energyPercentText" class="text-white">0%</span>
+          </div>
+          
+          <div class="w-full h-3.5 bg-[#0e1224] rounded-full p-0.5 border border-[#00f3ff]/40 overflow-hidden relative shadow-[inset_0_0_8px_rgba(0,0,0,0.8)]">
+            <div id="energyBarFill" class="h-full rounded-full bg-gradient-to-r from-[#00f3ff] via-[#9d00ff] to-[#ff007f] w-0 transition-all duration-100 shadow-[0_0_12px_#ff007f]"></div>
+            <div id="energyFlashText" class="absolute inset-0 flex items-center justify-center font-cyber text-[9px] font-black tracking-widest text-white uppercase opacity-0 pointer-events-none transition-opacity">
+              ★ READY - PRESS SPACE OR OVERDRIVE ★
+            </div>
+          </div>
+        </div>
+
+        <!-- Touch Virtual Controls (Left, Overdrive Dash, Right) -->
+        <div class="w-full grid grid-cols-5 gap-2 items-center">
+          
+          <!-- Virtual Left Button -->
+          <button id="btnVirtualLeft" class="col-span-2 h-14 rounded-xl bg-gradient-to-b from-[#121936] to-[#0a0f24] border-2 border-[#00f3ff]/50 active:border-[#00f3ff] active:bg-[#00f3ff]/20 text-[#00f3ff] active:scale-95 shadow-[0_0_10px_rgba(0,243,255,0.2)] flex items-center justify-center transition-all select-none">
+            <svg class="w-8 h-8 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          <!-- Virtual Overdrive Dash Button -->
+          <button id="btnVirtualOverdrive" class="col-span-1 h-14 rounded-xl bg-gradient-to-b from-[#241029] to-[#120717] border-2 border-gray-700 text-gray-500 flex flex-col items-center justify-center opacity-60 transition-all select-none overflow-hidden" disabled>
+            <span class="font-cyber font-black text-[10px] tracking-tighter pointer-events-none">BOOST</span>
+            <svg class="w-5 h-5 pointer-events-none" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+            </svg>
+          </button>
+
+          <!-- Virtual Right Button -->
+          <button id="btnVirtualRight" class="col-span-2 h-14 rounded-xl bg-gradient-to-b from-[#121936] to-[#0a0f24] border-2 border-[#00f3ff]/50 active:border-[#00f3ff] active:bg-[#00f3ff]/20 text-[#00f3ff] active:scale-95 shadow-[0_0_10px_rgba(0,243,255,0.2)] flex items-center justify-center transition-all select-none">
+            <svg class="w-8 h-8 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+        </div>
+      </footer>
+
+      <!-- ============================================== -->
+      <!-- OVERLAYS / MODALS / SCREENS                   -->
+      <!-- ============================================== -->
+
+      <!-- 1. MAIN MENU SCREEN -->
+      <div id="screenMenu" class="absolute inset-0 z-30 bg-[#070814]/95 flex flex-col items-center justify-center px-6 py-8 text-center">
+        <!-- Logo / Title -->
+        <div class="mb-2">
+          <div class="text-[12px] font-cyber tracking-[0.3em] text-[#00f3ff] uppercase mb-1">SYNTHWAVE ENDLESS RUNNER</div>
+          <h1 class="glitch font-cyber font-black text-4xl sm:text-5xl text-white tracking-widest leading-none drop-shadow-[0_0_15px_#00f3ff]" data-text="CYBER RUNNER">
+            CYBER RUNNER
+          </h1>
+          <div class="font-cyber font-black text-3xl sm:text-4xl text-[#ff007f] tracking-widest mt-1 drop-shadow-[0_0_15px_#ff007f]">
+            2099
+          </div>
+        </div>
+
+        <div class="w-24 h-1 bg-gradient-to-r from-transparent via-[#00f3ff] to-transparent my-4"></div>
+
+        <!-- High Score Card -->
+        <div class="w-full max-w-xs p-3 rounded-xl bg-[#0f142b]/80 border border-[#00f3ff]/30 mb-6 flex items-center justify-between">
+          <span class="text-xs font-cyber tracking-wider text-gray-400">BEST RECORD</span>
+          <span id="menuHighScore" class="font-cyber font-black text-lg text-amber-300 drop-shadow-[0_0_5px_#ffe600]">000000</span>
+        </div>
+
+        <!-- Menu Action Buttons -->
+        <div class="w-full max-w-xs flex flex-col gap-3">
+          <button id="btnStartGame" class="w-full py-4 rounded-xl bg-gradient-to-r from-[#00f3ff] to-[#0099ff] text-black font-cyber font-black text-lg tracking-widest shadow-[0_0_20px_rgba(0,243,255,0.6)] hover:brightness-110 active:scale-95 transition-all">
+            LAUNCH RUN
+          </button>
+
+          <button id="btnHowToPlay" class="w-full py-3 rounded-xl bg-[#0f142b] border border-[#00f3ff]/40 text-[#00f3ff] font-cyber font-bold text-sm tracking-wider hover:bg-[#00f3ff]/15 active:scale-95 transition-all">
+            HOW TO PLAY
+          </button>
+
+          <button id="btnSoundSettings" class="w-full py-3 rounded-xl bg-[#0f142b] border border-[#ff007f]/40 text-[#ff007f] font-cyber font-bold text-sm tracking-wider hover:bg-[#ff007f]/15 active:scale-95 transition-all">
+            SOUND & SETTINGS
+          </button>
+        </div>
+
+        <!-- Mini Footer Tips -->
+        <div class="mt-8 text-[11px] text-gray-500 font-cyber tracking-wider">
+          USE [A]/[D] OR ARROWS TO SHIFT LANES<br />
+          [SPACE] FOR OVERDRIVE DASH
+        </div>
+      </div>
+
+      <!-- 2. HOW TO PLAY MODAL -->
+      <div id="modalHowToPlay" class="absolute inset-0 z-40 bg-[#05060f]/95 hidden flex-col items-center justify-center p-6 text-left overflow-y-auto">
+        <div class="w-full max-w-sm bg-[#0a0e24] p-5 rounded-2xl border-2 border-[#00f3ff]/40 shadow-2xl flex flex-col gap-4">
+          <div class="flex items-center justify-between border-b border-[#00f3ff]/20 pb-3">
+            <h2 class="font-cyber font-bold text-xl text-[#00f3ff] tracking-wider">HOW TO PLAY</h2>
+            <button id="btnCloseHowToPlay" class="text-gray-400 hover:text-white font-cyber text-lg font-bold">✕</button>
+          </div>
+
+          <div class="flex flex-col gap-3 text-sm text-gray-300">
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-[#00f3ff]/20 border border-[#00f3ff] text-[#00f3ff] flex items-center justify-center font-cyber font-bold flex-shrink-0">3</div>
+              <div>
+                <strong class="text-white block font-cyber">3-Lane Lateral Movement</strong>
+                Dodge oncoming hazards by shifting Left, Center, or Right. No jumps or slides!
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-[#ffe600]/20 border border-[#ffe600] text-amber-300 flex items-center justify-center font-cyber font-bold flex-shrink-0">⚡</div>
+              <div>
+                <strong class="text-white block font-cyber">Overdrive Dash</strong>
+                Collect Energy Orbs to charge the gauge to 100%. Trigger Overdrive for temporary Invincibility, 3x score multiplier, and smashing obstacles!
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-[#ff007f]/20 border border-[#ff007f] text-[#ff007f] flex items-center justify-center font-cyber font-bold flex-shrink-0">✦</div>
+              <div>
+                <strong class="text-white block font-cyber">Chips & Combos</strong>
+                Grab yellow Multiplier Chips to boost score multipliers. Avoid Red Neon Walls, Laser Grids, and Plasma Spikes.
+              </div>
+            </div>
+
+            <div class="p-2.5 rounded-lg bg-[#141b38] border border-white/10 text-xs text-gray-300 mt-1">
+              <span class="text-[#00f3ff] font-bold">Controls:</span> Left/Right arrows, A/D, touch swipe, or on-screen buttons. Spacebar triggers Overdrive.
+            </div>
+          </div>
+
+          <button id="btnHowToPlayOk" class="w-full py-2.5 rounded-xl bg-[#00f3ff] text-black font-cyber font-black text-sm tracking-wider mt-2">
+            GOT IT
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. SOUND & SETTINGS MODAL -->
+      <div id="modalSoundSettings" class="absolute inset-0 z-40 bg-[#05060f]/95 hidden flex-col items-center justify-center p-6 text-left">
+        <div class="w-full max-w-sm bg-[#0a0e24] p-5 rounded-2xl border-2 border-[#ff007f]/40 shadow-2xl flex flex-col gap-4">
+          <div class="flex items-center justify-between border-b border-[#ff007f]/20 pb-3">
+            <h2 class="font-cyber font-bold text-xl text-[#ff007f] tracking-wider">AUDIO SETTINGS</h2>
+            <button id="btnCloseSoundSettings" class="text-gray-400 hover:text-white font-cyber text-lg font-bold">✕</button>
+          </div>
+
+          <div class="flex flex-col gap-4 py-2">
+            <!-- Audio Toggle -->
+            <div class="flex items-center justify-between">
+              <span class="font-cyber text-sm text-gray-200">MASTER AUDIO</span>
+              <button id="btnToggleAudioModal" class="px-4 py-1.5 rounded-lg font-cyber font-bold text-xs bg-[#00f3ff]/20 border border-[#00f3ff] text-[#00f3ff]">
+                ENABLED
+              </button>
+            </div>
+
+            <!-- Volume Slider -->
+            <div class="flex flex-col gap-1.5">
+              <div class="flex justify-between text-xs font-cyber text-gray-300">
+                <span>SYNTH BGM VOLUME</span>
+                <span id="bgmVolumeText">70%</span>
+              </div>
+              <input id="sliderBgmVolume" type="range" min="0" max="100" value="70" class="w-full accent-[#00f3ff] cursor-pointer" />
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <div class="flex justify-between text-xs font-cyber text-gray-300">
+                <span>SFX VOLUME</span>
+                <span id="sfxVolumeText">85%</span>
+              </div>
+              <input id="sliderSfxVolume" type="range" min="0" max="100" value="85" class="w-full accent-[#ff007f] cursor-pointer" />
+            </div>
+          </div>
+
+          <button id="btnSaveSoundSettings" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#ff007f] to-[#9d00ff] text-white font-cyber font-black text-sm tracking-wider mt-2">
+            SAVE & RETURN
+          </button>
+        </div>
+      </div>
+
+      <!-- 4. PAUSE OVERLAY -->
+      <div id="screenPaused" class="absolute inset-0 z-30 bg-[#070814]/90 backdrop-blur-md hidden flex-col items-center justify-center p-6 text-center">
+        <h2 class="font-cyber font-black text-3xl text-[#00f3ff] tracking-widest drop-shadow-[0_0_12px_#00f3ff] mb-6">
+          RUN SUSPENDED
+        </h2>
+
+        <div class="w-full max-w-xs flex flex-col gap-3">
+          <button id="btnResumeGame" class="w-full py-3.5 rounded-xl bg-[#00f3ff] text-black font-cyber font-black text-base tracking-widest hover:brightness-110 active:scale-95 transition-all">
+            RESUME RUN
+          </button>
+
+          <button id="btnRestartFromPause" class="w-full py-3 rounded-xl bg-[#0f142b] border border-[#ffe600]/40 text-amber-300 font-cyber font-bold text-sm tracking-wider hover:bg-[#ffe600]/15 active:scale-95 transition-all">
+            RESTART MISSION
+          </button>
+
+          <button id="btnMenuFromPause" class="w-full py-3 rounded-xl bg-[#0f142b] border border-gray-600 text-gray-300 font-cyber font-bold text-sm tracking-wider hover:bg-white/10 active:scale-95 transition-all">
+            ABORT TO MENU
+          </button>
+        </div>
+      </div>
+
+      <!-- 5. GAME OVER MODAL -->
+      <div id="screenGameOver" class="absolute inset-0 z-30 bg-[#070814]/95 backdrop-blur-md hidden flex-col items-center justify-center p-6 text-center">
+        <!-- Warning Icon & Title -->
+        <div class="w-14 h-14 rounded-2xl bg-[#ff0033]/20 border-2 border-[#ff0033] text-[#ff0033] flex items-center justify-center mb-3 shadow-[0_0_20px_#ff0033]">
+          <svg class="w-8 h-8 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+
+        <h2 class="font-cyber font-black text-3xl text-white tracking-widest drop-shadow-[0_0_10px_#ff0033] mb-1">
+          HULL DESTROYED
+        </h2>
+        <div class="text-xs font-cyber tracking-widest text-[#ff0033] uppercase mb-4">CRITICAL COLLISION DETECTED</div>
+
+        <!-- New High Score Alert Banner -->
+        <div id="newHighScoreBadge" class="hidden mb-4 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500/30 via-yellow-400/40 to-amber-500/30 border border-yellow-400 text-yellow-300 font-cyber font-black text-xs tracking-widest animate-bounce">
+          ★ NEW RECORD ACHIEVED ★
+        </div>
+
+        <!-- Stats Card -->
+        <div class="w-full max-w-xs bg-[#0b1026] rounded-2xl border border-[#00f3ff]/30 p-4 mb-6 flex flex-col gap-3">
+          <div class="flex items-center justify-between border-b border-white/10 pb-2">
+            <span class="text-xs font-cyber text-gray-400">DISTANCE REACHED</span>
+            <span id="finalDistance" class="font-cyber font-bold text-amber-300 text-base">0m</span>
+          </div>
+
+          <div class="flex items-center justify-between border-b border-white/10 pb-2">
+            <span class="text-xs font-cyber text-gray-400">FINAL SCORE</span>
+            <span id="finalScore" class="font-cyber font-black text-[#00f3ff] text-xl">000000</span>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-cyber text-gray-400">ALL-TIME RECORD</span>
+            <span id="finalHighScore" class="font-cyber font-bold text-gray-200 text-base">000000</span>
+          </div>
+        </div>
+
+        <!-- Game Over Buttons -->
+        <div class="w-full max-w-xs flex flex-col gap-3">
+          <button id="btnPlayAgain" class="w-full py-4 rounded-xl bg-gradient-to-r from-[#00f3ff] via-[#00c8ff] to-[#0077ff] text-black font-cyber font-black text-base tracking-widest shadow-[0_0_20px_rgba(0,243,255,0.6)] hover:brightness-110 active:scale-95 transition-all">
+            RETRY MISSION
+          </button>
+
+          <button id="btnGameOverMenu" class="w-full py-3 rounded-xl bg-[#0f142b] border border-gray-600 text-gray-300 font-cyber font-bold text-sm tracking-wider hover:bg-white/10 active:scale-95 transition-all">
+            MAIN MENU
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- COMPLETE JAVASCRIPT GAME ENGINE                                -->
+    <!-- ============================================================== -->
+    <script>
+      /**
+       * CYBER RUNNER 2099
+       * Single-File 3-Lane Endless Runner with Web Audio Synthesizer
+       */
+      (function() {
+        'use strict';
+
+        // ------------------------------------------------------------
+        // 1. STATE & CONSTANTS
+        // ------------------------------------------------------------
+        const GameState = {
+          MENU: 'MENU',
+          PLAYING: 'PLAYING',
+          PAUSED: 'PAUSED',
+          GAMEOVER: 'GAMEOVER'
+        };
+
+        let currentState = GameState.MENU;
+
+        // Player Constants & State
+        const player = {
+          lane: 0,           // -1: Left, 0: Center, 1: Right
+          targetLane: 0,
+          currentLaneX: 0,   // Interpolated lane value (-1 to 1)
+          x: 0,              // Screen X in pixels
+          y: 0,              // Screen Y in pixels
+          width: 44,
+          height: 52,
+          tiltAngle: 0,      // Banking rotation on lane change
+          energy: 0,         // 0 - 100%
+          isOverdrive: false,
+          overdriveTimer: 0,
+          overdriveDuration: 7.0, // seconds
+          trailHistory: []
+        };
+
+        // Game Metrics & Progression
+        let score = 0;
+        let distance = 0;
+        let multiplier = 1;
+        let multiplierTimer = 0;
+        let baseSpeed = 1.0;
+        let currentSpeed = 1.0;
+        let lastTime = performance.now();
+        let screenShake = 0;
+        let screenShakeDecay = 0.9;
+        let shakeOffsetX = 0;
+        let shakeOffsetY = 0;
+
+        // Persistence
+        let highScore = parseInt(localStorage.getItem('cyber_runner_highscore') || '0', 10);
+        let audioMuted = localStorage.getItem('cyber_runner_audio_muted') === 'true';
+        let bgmVolume = parseFloat(localStorage.getItem('cyber_runner_bgm_vol') || '0.7');
+        let sfxVolume = parseFloat(localStorage.getItem('cyber_runner_sfx_vol') || '0.85');
+
+        // Spawning Entities
+        let entities = [];
+        let particles = [];
+        let warpLines = [];
+        let floatingTexts = [];
+        let nextSpawnDistance = 35; // meters
+        let entityIdCounter = 0;
+
+        // Horizon & Pseudo-3D Perspective Configuration
+        let horizonY = 0;
+        let horizonWidth = 0;
+        let bottomRoadWidth = 0;
+
+        // ------------------------------------------------------------
+        // 2. DOM ELEMENTS
+        // ------------------------------------------------------------
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvasContainer');
+
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const distanceDisplay = document.getElementById('distanceDisplay');
+        const multiplierBadge = document.getElementById('multiplierBadge');
+        const energyBarFill = document.getElementById('energyBarFill');
+        const energyPercentText = document.getElementById('energyPercentText');
+        const energyFlashText = document.getElementById('energyFlashText');
+        const announcementBanner = document.getElementById('announcementBanner');
+
+        const btnVirtualLeft = document.getElementById('btnVirtualLeft');
+        const btnVirtualRight = document.getElementById('btnVirtualRight');
+        const btnVirtualOverdrive = document.getElementById('btnVirtualOverdrive');
+
+        const btnMute = document.getElementById('btnMute');
+        const iconSoundOn = document.getElementById('iconSoundOn');
+        const iconSoundOff = document.getElementById('iconSoundOff');
+        const btnPause = document.getElementById('btnPause');
+
+        // Screens & Modals
+        const screenMenu = document.getElementById('screenMenu');
+        const screenPaused = document.getElementById('screenPaused');
+        const screenGameOver = document.getElementById('screenGameOver');
+        const modalHowToPlay = document.getElementById('modalHowToPlay');
+        const modalSoundSettings = document.getElementById('modalSoundSettings');
+
+        const menuHighScore = document.getElementById('menuHighScore');
+        const finalScore = document.getElementById('finalScore');
+        const finalDistance = document.getElementById('finalDistance');
+        const finalHighScore = document.getElementById('finalHighScore');
+        const newHighScoreBadge = document.getElementById('newHighScoreBadge');
+
+        const btnStartGame = document.getElementById('btnStartGame');
+        const btnHowToPlay = document.getElementById('btnHowToPlay');
+        const btnCloseHowToPlay = document.getElementById('btnCloseHowToPlay');
+        const btnHowToPlayOk = document.getElementById('btnHowToPlayOk');
+
+        const btnSoundSettings = document.getElementById('btnSoundSettings');
+        const btnCloseSoundSettings = document.getElementById('btnCloseSoundSettings');
+        const btnSaveSoundSettings = document.getElementById('btnSaveSoundSettings');
+        const btnToggleAudioModal = document.getElementById('btnToggleAudioModal');
+        const sliderBgmVolume = document.getElementById('sliderBgmVolume');
+        const sliderSfxVolume = document.getElementById('sliderSfxVolume');
+        const bgmVolumeText = document.getElementById('bgmVolumeText');
+        const sfxVolumeText = document.getElementById('sfxVolumeText');
+
+        const btnResumeGame = document.getElementById('btnResumeGame');
+        const btnRestartFromPause = document.getElementById('btnRestartFromPause');
+        const btnMenuFromPause = document.getElementById('btnMenuFromPause');
+
+        const btnPlayAgain = document.getElementById('btnPlayAgain');
+        const btnGameOverMenu = document.getElementById('btnGameOverMenu');
+
+        // ------------------------------------------------------------
+        // 3. PROCEDURAL WEB AUDIO API SYNTHESIZER
+        // ------------------------------------------------------------
+        let audioCtx = null;
+        let masterGain = null;
+        let bgmGain = null;
+        let sfxGain = null;
+        let bgmIntervalId = null;
+        let bgmStep = 0;
+        let bgmChordIndex = 0;
+
+        // Cyberpunk synthwave chord roots (Dm, F, C, Bb)
+        const chordProgressions = [
+          { bass: 73.42, notes: [293.66, 349.23, 440.00, 523.25] }, // D2 / Dm
+          { bass: 87.31, notes: [349.23, 440.00, 523.25, 698.46] }, // F2 / F
+          { bass: 65.41, notes: [261.63, 329.63, 392.00, 523.25] }, // C2 / C
+          { bass: 58.27, notes: [233.08, 293.66, 349.23, 466.16] }  // Bb1 / Bb
+        ];
+
+        function initAudio() {
+          if (!audioCtx) {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) {
+              audioCtx = new AudioContextClass();
+              masterGain = audioCtx.createGain();
+              masterGain.gain.value = audioMuted ? 0 : 1;
+              masterGain.connect(audioCtx.destination);
+
+              bgmGain = audioCtx.createGain();
+              bgmGain.gain.value = bgmVolume;
+              bgmGain.connect(masterGain);
+
+              sfxGain = audioCtx.createGain();
+              sfxGain.gain.value = sfxVolume;
+              sfxGain.connect(masterGain);
+            }
+          }
+          if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+        }
+
+        function setAudioMute(muted) {
+          audioMuted = muted;
+          localStorage.setItem('cyber_runner_audio_muted', muted);
+          if (masterGain && audioCtx) {
+            masterGain.gain.setTargetAtTime(audioMuted ? 0 : 1, audioCtx.currentTime, 0.05);
+          }
+          updateAudioUI();
+        }
+
+        function updateAudioUI() {
+          if (audioMuted) {
+            iconSoundOn.classList.add('hidden');
+            iconSoundOff.classList.remove('hidden');
+            btnToggleAudioModal.textContent = 'MUTED';
+            btnToggleAudioModal.className = 'px-4 py-1.5 rounded-lg font-cyber font-bold text-xs bg-red-500/20 border border-red-500 text-red-400';
+          } else {
+            iconSoundOn.classList.remove('hidden');
+            iconSoundOff.classList.add('hidden');
+            btnToggleAudioModal.textContent = 'ENABLED';
+            btnToggleAudioModal.className = 'px-4 py-1.5 rounded-lg font-cyber font-bold text-xs bg-[#00f3ff]/20 border border-[#00f3ff] text-[#00f3ff]';
+          }
+          sliderBgmVolume.value = Math.round(bgmVolume * 100);
+          sliderSfxVolume.value = Math.round(sfxVolume * 100);
+          bgmVolumeText.textContent = `${Math.round(bgmVolume * 100)}%`;
+          sfxVolumeText.textContent = `${Math.round(sfxVolume * 100)}%`;
+        }
+
+        // BGM Sequencer (Runs a tight 16-step rhythmic synthwave pulse)
+        function startBgm() {
+          stopBgm();
+          if (!audioCtx) return;
+          bgmStep = 0;
+          bgmChordIndex = 0;
+          
+          // ~128 BPM (16th notes = ~117ms per step)
+          const stepInterval = player.isOverdrive ? 95 : 117;
+          bgmIntervalId = setInterval(tickBgm, stepInterval);
+        }
+
+        function stopBgm() {
+          if (bgmIntervalId) {
+            clearInterval(bgmIntervalId);
+            bgmIntervalId = null;
+          }
+        }
+
+        function tickBgm() {
+          if (!audioCtx || audioCtx.state !== 'running' || audioMuted) return;
+          const t = audioCtx.currentTime;
+          const currentChord = chordProgressions[bgmChordIndex];
+
+          // 1. Kick on beats 0, 4, 8, 12
+          if (bgmStep % 4 === 0) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.frequency.setValueAtTime(140, t);
+            osc.frequency.exponentialRampToValueAtTime(32, t + 0.1);
+            gain.gain.setValueAtTime(player.isOverdrive ? 0.35 : 0.28, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
+            osc.connect(gain);
+            gain.connect(bgmGain);
+            osc.start(t);
+            osc.stop(t + 0.12);
+          }
+
+          // 2. Snare / Noise Clap on beats 4, 12
+          if (bgmStep === 4 || bgmStep === 12) {
+            playNoiseSnare(t);
+          }
+
+          // 3. Hi-hat on every off-beat 16th
+          if (bgmStep % 2 !== 0) {
+            playHiHat(t);
+          }
+
+          // 4. Synthwave Rolling Bass (16th note rolling sawtooth bass with filter)
+          const bassFreq = currentChord.bass * (bgmStep % 2 === 0 ? 1 : 2); // octaving
+          const bassOsc = audioCtx.createOscillator();
+          const bassFilter = audioCtx.createBiquadFilter();
+          const bassGainNode = audioCtx.createGain();
+
+          bassOsc.type = 'sawtooth';
+          bassOsc.frequency.setValueAtTime(bassFreq, t);
+
+          bassFilter.type = 'lowpass';
+          const cutoff = player.isOverdrive ? 2400 : 900;
+          bassFilter.frequency.setValueAtTime(cutoff, t);
+          bassFilter.frequency.exponentialRampToValueAtTime(cutoff * 0.3, t + 0.09);
+
+          bassGainNode.gain.setValueAtTime(player.isOverdrive ? 0.25 : 0.18, t);
+          bassGainNode.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+
+          bassOsc.connect(bassFilter);
+          bassFilter.connect(bassGainNode);
+          bassGainNode.connect(bgmGain);
+          bassOsc.start(t);
+          bassOsc.stop(t + 0.11);
+
+          // 5. Arpeggio Synth Note
+          const arpNote = currentChord.notes[bgmStep % currentChord.notes.length];
+          const arpOsc = audioCtx.createOscillator();
+          const arpFilter = audioCtx.createBiquadFilter();
+          const arpGainNode = audioCtx.createGain();
+
+          arpOsc.type = player.isOverdrive ? 'sawtooth' : 'triangle';
+          arpOsc.frequency.setValueAtTime(arpNote * (player.isOverdrive ? 2 : 1), t);
+
+          arpFilter.type = 'bandpass';
+          arpFilter.frequency.setValueAtTime(player.isOverdrive ? 1800 : 1200, t);
+          arpFilter.Q.value = 3;
+
+          arpGainNode.gain.setValueAtTime(player.isOverdrive ? 0.15 : 0.09, t);
+          arpGainNode.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+
+          arpOsc.connect(arpFilter);
+          arpFilter.connect(arpGainNode);
+          arpGainNode.connect(bgmGain);
+          arpOsc.start(t);
+          arpOsc.stop(t + 0.11);
+
+          // Step increment
+          bgmStep = (bgmStep + 1) % 16;
+          if (bgmStep === 0) {
+            bgmChordIndex = (bgmChordIndex + 1) % chordProgressions.length;
+          }
+        }
+
+        function playNoiseSnare(t) {
+          const bufferSize = audioCtx.sampleRate * 0.1;
+          const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * 0.5;
+          }
+          const noise = audioCtx.createBufferSource();
+          noise.buffer = buffer;
+
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = 'highpass';
+          filter.frequency.setValueAtTime(900, t);
+
+          const gain = audioCtx.createGain();
+          gain.gain.setValueAtTime(0.18, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(bgmGain);
+          noise.start(t);
+        }
+
+        function playHiHat(t) {
+          const bufferSize = audioCtx.sampleRate * 0.04;
+          const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * 0.3;
+          }
+          const noise = audioCtx.createBufferSource();
+          noise.buffer = buffer;
+
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = 'highpass';
+          filter.frequency.setValueAtTime(6000, t);
+
+          const gain = audioCtx.createGain();
+          gain.gain.setValueAtTime(0.08, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
+
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(bgmGain);
+          noise.start(t);
+        }
+
+        // SFX: Lane Shift (Pitch-shifted frequency sweep)
+        function playSfxLaneShift(direction) {
+          if (!audioCtx || audioMuted) return;
+          const t = audioCtx.currentTime;
+          const osc = audioCtx.createOscillator();
+          const filter = audioCtx.createBiquadFilter();
+          const gain = audioCtx.createGain();
+
+          osc.type = 'sawtooth';
+          const startF = direction > 0 ? 320 : 480;
+          const endF = direction > 0 ? 560 : 280;
+          osc.frequency.setValueAtTime(startF, t);
+          osc.frequency.exponentialRampToValueAtTime(endF, t + 0.08);
+
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(1400, t);
+          filter.Q.value = 5;
+
+          gain.gain.setValueAtTime(0.2, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(sfxGain);
+          osc.start(t);
+          osc.stop(t + 0.09);
+        }
+
+        // SFX: Collect Energy Orb (Crystal dual-sine chime)
+        function playSfxCollectOrb() {
+          if (!audioCtx || audioMuted) return;
+          const t = audioCtx.currentTime;
+          [880, 1320, 1760].forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, t + idx * 0.03);
+            gain.gain.setValueAtTime(0.18, t + idx * 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.03 + 0.22);
+
+            osc.connect(gain);
+            gain.connect(sfxGain);
+            osc.start(t + idx * 0.03);
+            osc.stop(t + idx * 0.03 + 0.25);
+          });
+        }
+
+        // SFX: Collect Multiplier Chip (Synth power chime)
+        function playSfxCollectChip() {
+          if (!audioCtx || audioMuted) return;
+          const t = audioCtx.currentTime;
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, t + idx * 0.025);
+            gain.gain.setValueAtTime(0.22, t + idx * 0.025);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.025 + 0.25);
+
+            osc.connect(gain);
+            gain.connect(sfxGain);
+            osc.start(t + idx * 0.025);
+            osc.stop(t + idx * 0.025 + 0.28);
+          });
+        }
+
+        // SFX: Overdrive Trigger (Heavy bass drop + power-up riser)
+        function playSfxOverdriveTrigger() {
+          if (!audioCtx || audioMuted) return;
+          const t = audioCtx.currentTime;
+
+          // Sub bass drop
+          const subOsc = audioCtx.createOscillator();
+          const subGain = audioCtx.createGain();
+          subOsc.type = 'sine';
+          subOsc.frequency.setValueAtTime(220, t);
+          subOsc.frequency.exponentialRampToValueAtTime(35, t + 0.5);
+          subGain.gain.setValueAtTime(0.5, t);
+          subGain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+
+          subOsc.connect(subGain);
+          subGain.connect(sfxGain);
+          subOsc.start(t);
+          subOsc.stop(t + 0.6);
+
+          // Ascending Riser sweep
+          const riserOsc = audioCtx.createOscillator();
+          const riserGain = audioCtx.createGain();
+          riserOsc.type = 'sawtooth';
+          riserOsc.frequency.setValueAtTime(300, t);
+          riserOsc.frequency.exponentialRampToValueAtTime(1600, t + 0.45);
+          riserGain.gain.setValueAtTime(0.25, t);
+          riserGain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+
+          riserOsc.connect(riserGain);
+          riserGain.connect(sfxGain);
+          riserOsc.start(t);
+          riserOsc.stop(t + 0.55);
+        }
+
+        // SFX: Obstacle Shattered during Overdrive
+        function playSfxObstacleShatter() {
+          if (!audioCtx || audioMuted) return;
+          const t = audioCtx.currentTime;
+          const bufferSize = audioCtx.sampleRate * 0.2;
+          const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * 0.8;
+          }
+          const noise = audioCtx.createBufferSource();
+          noise.buffer = buffer;
+
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(1800, t);
+          filter.frequency.exponentialRampToValueAtTime(200, t + 0.2);
+
+          const gain = audioCtx.createGain();
+          gain.gain.setValueAtTime(0.4, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(sfxGain);
+          noise.start(t);
+        }
+
+        // SFX: Collision / Game Over Explosion
+        function playSfxCollision() {
+          if (!audioCtx || audioMuted) return;
+          const t = audioCtx.currentTime;
+          
+          // White noise explosion with exponential decay
+          const bufferSize = audioCtx.sampleRate * 0.6;
+          const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1);
+          }
+          const noise = audioCtx.createBufferSource();
+          noise.buffer = buffer;
+
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(800, t);
+          filter.frequency.exponentialRampToValueAtTime(40, t + 0.55);
+
+          const gain = audioCtx.createGain();
+          gain.gain.setValueAtTime(0.5, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(sfxGain);
+          noise.start(t);
+        }
+
+        // SFX: UI Click
+        function playSfxClick() {
+          if (!audioCtx || audioMuted) return;
+          const t = audioCtx.currentTime;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(1100, t);
+          gain.gain.setValueAtTime(0.12, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+          osc.connect(gain);
+          gain.connect(sfxGain);
+          osc.start(t);
+          osc.stop(t + 0.05);
+        }
+
+        // ------------------------------------------------------------
+        // 4. CANVAS SIZING & PSEUDO-3D PROJECTION
+        // ------------------------------------------------------------
+        function resizeCanvas() {
+          const rect = container.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          canvas.width = rect.width * dpr;
+          canvas.height = rect.height * dpr;
+          ctx.resetTransform();
+          ctx.scale(dpr, dpr);
+
+          // Perspective math
+          horizonY = rect.height * 0.28;
+          horizonWidth = rect.width * 0.18;
+          bottomRoadWidth = rect.width * 0.88;
+
+          player.y = rect.height * 0.84;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        /**
+         * Converts Lane (-1, 0, 1) and Progress Z (0.0 at horizon, 1.0 at player)
+         * to 2D Screen Coordinates (x, y, scale)
+         */
+        function project3D(lane, p) {
+          const rectWidth = canvas.width / (window.devicePixelRatio || 1);
+          const rectHeight = canvas.height / (window.devicePixelRatio || 1);
+          const centerX = rectWidth * 0.5;
+
+          // Non-linear acceleration creates deep 3D perspective
+          const curvedP = Math.pow(Math.max(0, Math.min(1.2, p)), 1.8);
+          const y = horizonY + curvedP * (rectHeight - horizonY);
+
+          const currentRoadW = horizonWidth + (bottomRoadWidth - horizonWidth) * curvedP;
+          const laneSpacing = currentRoadW / 3;
+          const x = centerX + lane * laneSpacing;
+          const scale = 0.12 + 0.88 * Math.pow(p, 1.4);
+
+          return { x, y, scale, roadWidth: currentRoadW };
+        }
+
+        // ------------------------------------------------------------
+        // 5. INPUT HANDLING (KEYBOARD, TOUCH, SWIPE)
+        // ------------------------------------------------------------
+        function moveLane(direction) {
+          initAudio();
+          if (currentState !== GameState.PLAYING) return;
+          const newLane = Math.max(-1, Math.min(1, player.targetLane + direction));
+          if (newLane !== player.targetLane) {
+            player.targetLane = newLane;
+            player.tiltAngle = direction * 0.32; // Banking tilt
+            playSfxLaneShift(direction);
+            // Spawn little thruster burst particles on lane change
+            createThrusterBurst();
+          }
+        }
+
+        function triggerOverdrive() {
+          initAudio();
+          if (currentState !== GameState.PLAYING) return;
+          if (player.energy >= 100 && !player.isOverdrive) {
+            player.isOverdrive = true;
+            player.overdriveTimer = player.overdriveDuration;
+            playSfxOverdriveTrigger();
+            showAnnouncement('★ OVERDRIVE ACTIVATED! ★', '#ff007f');
+            screenShake = 14;
+            startBgm(); // Restart BGM with faster tempo & high-energy filter
+            createShockwave(player.x, player.y, '#ff007f');
+          }
+        }
+
+        // Keyboard Event Listeners
+        window.addEventListener('keydown', (e) => {
+          initAudio();
+          if (e.code === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+            e.preventDefault();
+            moveLane(-1);
+          } else if (e.code === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+            e.preventDefault();
+            moveLane(1);
+          } else if (e.code === 'Space') {
+            e.preventDefault();
+            triggerOverdrive();
+          } else if (e.code === 'Escape' || e.key === 'p' || e.key === 'P') {
+            e.preventDefault();
+            togglePause();
+          }
+        });
+
+        // Touch & Swipe Gestures on Canvas
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchStartTime = 0;
+
+        canvas.addEventListener('touchstart', (e) => {
+          initAudio();
+          if (e.touches.length > 0) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            touchStartTime = performance.now();
+          }
+        }, { passive: true });
+
+        canvas.addEventListener('touchend', (e) => {
+          if (e.changedTouches.length > 0) {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            const deltaTime = performance.now() - touchStartTime;
+
+            // Swipe Detection (Horizontal dominant swipe)
+            if (Math.abs(deltaX) > 30 && Math.abs(deltaX) > Math.abs(deltaY) && deltaTime < 400) {
+              if (deltaX < 0) {
+                moveLane(-1);
+              } else {
+                moveLane(1);
+              }
+            } else if (Math.abs(deltaX) < 15 && Math.abs(deltaY) < 15 && deltaTime < 300) {
+              // Direct Tap: Left half = move left, Right half = move right
+              const rect = canvas.getBoundingClientRect();
+              const tapX = touchEndX - rect.left;
+              if (tapX < rect.width * 0.45) {
+                moveLane(-1);
+              } else if (tapX > rect.width * 0.55) {
+                moveLane(1);
+              }
+            }
+          }
+        }, { passive: true });
+
+        // Virtual On-Screen Button Listeners
+        btnVirtualLeft.addEventListener('click', () => moveLane(-1));
+        btnVirtualRight.addEventListener('click', () => moveLane(1));
+        btnVirtualOverdrive.addEventListener('click', () => triggerOverdrive());
+
+        // Top HUD Buttons
+        btnMute.addEventListener('click', () => {
+          initAudio();
+          playSfxClick();
+          setAudioMute(!audioMuted);
+        });
+
+        btnPause.addEventListener('click', () => {
+          initAudio();
+          playSfxClick();
+          togglePause();
+        });
+
+        // ------------------------------------------------------------
+        // 6. ANNOUNCEMENT & FLOATING TEXTS
+        // ------------------------------------------------------------
+        let announcementTimeout = null;
+        function showAnnouncement(text, color = '#00f3ff') {
+          announcementBanner.textContent = text;
+          announcementBanner.style.color = color;
+          announcementBanner.style.borderColor = color;
+          announcementBanner.style.boxShadow = `0 0 20px ${color}`;
+          announcementBanner.classList.remove('opacity-0');
+          announcementBanner.classList.add('opacity-100');
+
+          if (announcementTimeout) clearTimeout(announcementTimeout);
+          announcementTimeout = setTimeout(() => {
+            announcementBanner.classList.remove('opacity-100');
+            announcementBanner.classList.add('opacity-0');
+          }, 1400);
+        }
+
+        function addFloatingText(text, x, y, color = '#ffe600') {
+          floatingTexts.push({
+            text,
+            x,
+            y,
+            color,
+            alpha: 1.0,
+            vy: -1.2,
+            life: 1.0
+          });
+        }
+
+        // ------------------------------------------------------------
+        // 7. PARTICLES & VISUAL EFFECTS
+        // ------------------------------------------------------------
+        function createThrusterBurst() {
+          for (let i = 0; i < 6; i++) {
+            particles.push({
+              x: player.x + (Math.random() - 0.5) * 12,
+              y: player.y + 16,
+              vx: (Math.random() - 0.5) * 1.5,
+              vy: 2 + Math.random() * 3,
+              size: 2 + Math.random() * 3,
+              color: player.isOverdrive ? '#ff007f' : '#00f3ff',
+              alpha: 0.9,
+              decay: 0.05 + Math.random() * 0.03
+            });
+          }
+        }
+
+        function createExplosion(x, y, color = '#ff0055', count = 28) {
+          for (let i = 0; i < count; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 1.5 + Math.random() * 6;
+            particles.push({
+              x,
+              y,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed,
+              size: 2 + Math.random() * 5,
+              color,
+              alpha: 1.0,
+              decay: 0.02 + Math.random() * 0.03
+            });
+          }
+        }
+
+        function createSparkles(x, y, color = '#00f3ff', count = 18) {
+          for (let i = 0; i < count; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 1.0 + Math.random() * 4;
+            particles.push({
+              x,
+              y,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed - 1.0,
+              size: 1.5 + Math.random() * 3,
+              color,
+              alpha: 1.0,
+              decay: 0.03 + Math.random() * 0.04
+            });
+          }
+        }
+
+        function createShockwave(x, y, color = '#00f3ff') {
+          particles.push({
+            isRing: true,
+            x,
+            y,
+            radius: 10,
+            maxRadius: 110,
+            color,
+            alpha: 1.0,
+            growth: 4.5
+          });
+        }
+
+        // Initialize warp speed lines for Overdrive
+        function initWarpLines() {
+          warpLines = [];
+          for (let i = 0; i < 45; i++) {
+            warpLines.push({
+              x: Math.random(),
+              y: Math.random(),
+              length: 15 + Math.random() * 50,
+              speed: 1.5 + Math.random() * 2.5,
+              color: i % 2 === 0 ? '#00f3ff' : '#ff007f'
+            });
+          }
+        }
+        initWarpLines();
+
+        // ------------------------------------------------------------
+        // 8. SPAWNING ENGINE (OBSTACLES & COLLECTIBLES)
+        // ------------------------------------------------------------
+        function spawnEntities() {
+          // Available lane indices: -1, 0, 1
+          const lanes = [-1, 0, 1];
+          const roll = Math.random();
+
+          // Obstacle Types: 'wall' | 'laser' | 'barrier'
+          // Collectible Types: 'orb' | 'chip'
+
+          if (roll < 0.65) {
+            // Spawn Obstacles (1 or 2 lanes, NEVER all 3)
+            const numObstacles = (distance > 250 && Math.random() < 0.45) ? 2 : 1;
+            // Shuffle lanes
+            lanes.sort(() => Math.random() - 0.5);
+
+            for (let i = 0; i < numObstacles; i++) {
+              const obstacleLane = lanes[i];
+              const typeRoll = Math.random();
+              let obsType = 'wall';
+              if (typeRoll < 0.35) obsType = 'wall';
+              else if (typeRoll < 0.70) obsType = 'laser';
+              else obsType = 'barrier';
+
+              entities.push({
+                id: ++entityIdCounter,
+                isObstacle: true,
+                type: obsType,
+                lane: obstacleLane,
+                p: 0, // at horizon
+                hit: false
+              });
+            }
+
+            // In remaining open lane, maybe spawn a collectible to reward dodging!
+            if (numObstacles === 1 && Math.random() < 0.55) {
+              const freeLane = lanes[1];
+              entities.push({
+                id: ++entityIdCounter,
+                isObstacle: false,
+                type: Math.random() < 0.65 ? 'orb' : 'chip',
+                lane: freeLane,
+                p: -0.05, // slightly trailing
+                hit: false
+              });
+            }
+
+          } else {
+            // Spawn Collectible Orbs or Chips
+            const targetLane = lanes[Math.floor(Math.random() * lanes.length)];
+            entities.push({
+              id: ++entityIdCounter,
+              isObstacle: false,
+              type: Math.random() < 0.65 ? 'orb' : 'chip',
+              lane: targetLane,
+              p: 0,
+              hit: false
+            });
+          }
+        }
+
+        // ------------------------------------------------------------
+        // 9. GAME LIFECYCLE & STATE MANAGEMENT
+        // ------------------------------------------------------------
+        function startNewGame() {
+          initAudio();
+          playSfxClick();
+
+          // Reset Player
+          player.lane = 0;
+          player.targetLane = 0;
+          player.currentLaneX = 0;
+          player.tiltAngle = 0;
+          player.energy = 0;
+          player.isOverdrive = false;
+          player.overdriveTimer = 0;
+          player.trailHistory = [];
+
+          // Reset World & Metrics
+          score = 0;
+          distance = 0;
+          multiplier = 1;
+          multiplierTimer = 0;
+          baseSpeed = 0.55;
+          currentSpeed = baseSpeed;
+          entities = [];
+          particles = [];
+          floatingTexts = [];
+          nextSpawnDistance = 25;
+          screenShake = 0;
+
+          // UI Sync
+          updateUI();
+          screenMenu.classList.add('hidden');
+          screenPaused.classList.add('hidden');
+          screenGameOver.classList.add('hidden');
+          modalHowToPlay.classList.add('hidden');
+          modalSoundSettings.classList.add('hidden');
+
+          currentState = GameState.PLAYING;
+          startBgm();
+          showAnnouncement('SYSTEM ONLINE - GO!', '#00f3ff');
+        }
+
+        function togglePause() {
+          if (currentState === GameState.PLAYING) {
+            currentState = GameState.PAUSED;
+            stopBgm();
+            screenPaused.classList.remove('hidden');
+            screenPaused.classList.add('flex');
+          } else if (currentState === GameState.PAUSED) {
+            currentState = GameState.PLAYING;
+            startBgm();
+            screenPaused.classList.add('hidden');
+            screenPaused.classList.remove('flex');
+            lastTime = performance.now();
+          }
+        }
+
+        function triggerGameOver() {
+          currentState = GameState.GAMEOVER;
+          stopBgm();
+          playSfxCollision();
+          screenShake = 22;
+
+          // Explosion at player hull
+          createExplosion(player.x, player.y, '#ff0055', 40);
+          createExplosion(player.x, player.y, '#ffe600', 25);
+
+          // Check High Score
+          let isNewRecord = false;
+          if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('cyber_runner_highscore', highScore.toString());
+            isNewRecord = true;
+          }
+
+          // Populate Modal
+          finalScore.textContent = score.toString().padStart(6, '0');
+          finalDistance.textContent = `${Math.floor(distance)}m`;
+          finalHighScore.textContent = highScore.toString().padStart(6, '0');
+
+          if (isNewRecord) {
+            newHighScoreBadge.classList.remove('hidden');
+          } else {
+            newHighScoreBadge.classList.add('hidden');
+          }
+
+          setTimeout(() => {
+            screenGameOver.classList.remove('hidden');
+            screenGameOver.classList.add('flex');
+          }, 650);
+        }
+
+        function returnToMenu() {
+          playSfxClick();
+          stopBgm();
+          currentState = GameState.MENU;
+          menuHighScore.textContent = highScore.toString().padStart(6, '0');
+          screenPaused.classList.add('hidden');
+          screenGameOver.classList.add('hidden');
+          screenMenu.classList.remove('hidden');
+          screenMenu.classList.add('flex');
+        }
+
+        // ------------------------------------------------------------
+        // 10. GAME UPDATE LOOP (DELTA TIME 60FPS)
+        // ------------------------------------------------------------
+        function update(dt) {
+          if (currentState !== GameState.PLAYING) return;
+
+          // 1. Difficulty Scaling with distance
+          baseSpeed = 0.55 + Math.min(0.65, distance * 0.00045);
+          currentSpeed = player.isOverdrive ? baseSpeed * 2.2 : baseSpeed;
+
+          // 2. Distance & Score
+          const deltaDistance = currentSpeed * 28 * dt;
+          distance += deltaDistance;
+          
+          const pointRate = player.isOverdrive ? 180 : 60;
+          score += Math.round(pointRate * multiplier * dt);
+
+          // 3. Multiplier Timer
+          if (multiplier > 1) {
+            multiplierTimer -= dt;
+            if (multiplierTimer <= 0) {
+              multiplier = Math.max(1, multiplier - 1);
+              multiplierTimer = multiplier > 1 ? 5.0 : 0;
+            }
+          }
+
+          // 4. Overdrive Timer
+          if (player.isOverdrive) {
+            player.overdriveTimer -= dt;
+            player.energy = Math.max(0, (player.overdriveTimer / player.overdriveDuration) * 100);
+            screenShake = Math.max(screenShake, 2.0); // Subtle constant rush vibration
+
+            if (player.overdriveTimer <= 0) {
+              player.isOverdrive = false;
+              player.energy = 0;
+              startBgm(); // Return to normal tempo
+              showAnnouncement('OVERDRIVE DEPLETED', '#ffe600');
+            }
+          }
+
+          // 5. Player Lane Interpolation (Lerp for silky smooth responsive shift)
+          player.currentLaneX += (player.targetLane - player.currentLaneX) * Math.min(1.0, 16.0 * dt);
+          player.tiltAngle += (0 - player.tiltAngle) * Math.min(1.0, 8.0 * dt);
+
+          const proj = project3D(player.currentLaneX, 0.88);
+          player.x = proj.x;
+          player.y = proj.y;
+
+          // Player trail history
+          player.trailHistory.unshift({ x: player.x, y: player.y, angle: player.tiltAngle });
+          if (player.trailHistory.length > (player.isOverdrive ? 14 : 7)) {
+            player.trailHistory.pop();
+          }
+
+          // Thruster engine particles
+          if (Math.random() < 0.85) {
+            createThrusterBurst();
+          }
+
+          // 6. Spawn Generation based on distance traveled
+          if (distance >= nextSpawnDistance) {
+            spawnEntities();
+            const minGap = player.isOverdrive ? 30 : 22;
+            const maxGap = player.isOverdrive ? 48 : 36;
+            nextSpawnDistance = distance + (minGap + Math.random() * (maxGap - minGap));
+          }
+
+          // 7. Update Entities (Move forward down the pseudo-3D road)
+          for (let i = entities.length - 1; i >= 0; i--) {
+            const ent = entities[i];
+            ent.p += currentSpeed * 0.95 * dt;
+
+            // Project entity position
+            const eProj = project3D(ent.lane, ent.p);
+            ent.x = eProj.x;
+            ent.y = eProj.y;
+            ent.scale = eProj.scale;
+
+            // Collision check window with player at p ~ 0.84 to 0.93
+            if (!ent.hit && ent.p >= 0.83 && ent.p <= 0.94) {
+              const laneDist = Math.abs(player.currentLaneX - ent.lane);
+              // Lateral collision threshold
+              if (laneDist < 0.48) {
+                ent.hit = true;
+
+                if (ent.isObstacle) {
+                  if (player.isOverdrive) {
+                    // Smash obstacle!
+                    playSfxObstacleShatter();
+                    createExplosion(ent.x, ent.y, '#00f3ff', 32);
+                    createShockwave(ent.x, ent.y, '#ff007f');
+                    screenShake = 12;
+                    const smashPoints = 250 * multiplier;
+                    score += smashPoints;
+                    addFloatingText(`+${smashPoints} SMASH!`, ent.x, ent.y - 20, '#00f3ff');
+                  } else {
+                    // Fatal crash!
+                    triggerGameOver();
+                    return;
+                  }
+                } else {
+                  // Collectible
+                  if (ent.type === 'orb') {
+                    playSfxCollectOrb();
+                    createSparkles(ent.x, ent.y, '#00f3ff', 20);
+                    // Add energy +15%
+                    if (!player.isOverdrive) {
+                      player.energy = Math.min(100, player.energy + 15);
+                      if (player.energy >= 100) {
+                        showAnnouncement('★ OVERDRIVE READY! ★', '#ffe600');
+                      }
+                    }
+                    score += 150 * multiplier;
+                    addFloatingText(`+${150 * multiplier} ENERGY`, ent.x, ent.y - 20, '#00f3ff');
+                  } else if (ent.type === 'chip') {
+                    playSfxCollectChip();
+                    createSparkles(ent.x, ent.y, '#ffe600', 25);
+                    multiplier = Math.min(5, multiplier + 1);
+                    multiplierTimer = 6.0;
+                    score += 300 * multiplier;
+                    addFloatingText(`MULTI x${multiplier}!`, ent.x, ent.y - 20, '#ffe600');
+                  }
+                }
+              }
+            }
+
+            // Despawn past camera (p > 1.15)
+            if (ent.p > 1.15) {
+              entities.splice(i, 1);
+            }
+          }
+
+          // 8. Update Particles
+          for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            if (p.isRing) {
+              p.radius += p.growth * 60 * dt;
+              p.alpha = Math.max(0, 1 - (p.radius / p.maxRadius));
+              if (p.radius >= p.maxRadius) {
+                particles.splice(i, 1);
+              }
+            } else {
+              p.x += p.vx * 60 * dt;
+              p.y += p.vy * 60 * dt;
+              p.alpha -= p.decay * 60 * dt;
+              if (p.alpha <= 0) {
+                particles.splice(i, 1);
+              }
+            }
+          }
+
+          // 9. Update Floating Texts
+          for (let i = floatingTexts.length - 1; i >= 0; i--) {
+            const ft = floatingTexts[i];
+            ft.y += ft.vy * 60 * dt;
+            ft.alpha -= 0.025 * 60 * dt;
+            if (ft.alpha <= 0) {
+              floatingTexts.splice(i, 1);
+            }
+          }
+
+          // 10. Screen Shake calculation
+          if (screenShake > 0.05) {
+            shakeOffsetX = (Math.random() - 0.5) * screenShake * 2;
+            shakeOffsetY = (Math.random() - 0.5) * screenShake * 2;
+            screenShake *= Math.pow(screenShakeDecay, 60 * dt);
+          } else {
+            shakeOffsetX = 0;
+            shakeOffsetY = 0;
+            screenShake = 0;
+          }
+
+          // 11. Sync UI
+          updateUI();
+        }
+
+        // ------------------------------------------------------------
+        // 11. UI SYNCHRONIZATION
+        // ------------------------------------------------------------
+        function updateUI() {
+          scoreDisplay.textContent = score.toString().padStart(6, '0');
+          distanceDisplay.textContent = `${Math.floor(distance)}m`;
+
+          // Multiplier Badge
+          multiplierBadge.textContent = `x${multiplier}`;
+          if (multiplier >= 3) {
+            multiplierBadge.className = 'text-[10px] font-cyber font-black px-1.5 py-0.5 rounded bg-[#ffe600]/25 border border-yellow-400 text-yellow-300 animate-pulse';
+          } else if (multiplier === 2) {
+            multiplierBadge.className = 'text-[10px] font-cyber font-black px-1.5 py-0.5 rounded bg-[#ff007f]/25 border border-[#ff007f] text-[#ff007f]';
+          } else {
+            multiplierBadge.className = 'text-[10px] font-cyber font-black px-1.5 py-0.5 rounded bg-[#00f3ff]/15 border border-[#00f3ff]/50 text-[#00f3ff]';
+          }
+
+          // Energy Bar Fill & Text
+          const roundedEnergy = Math.round(player.energy);
+          energyPercentText.textContent = `${roundedEnergy}%`;
+          energyBarFill.style.width = `${roundedEnergy}%`;
+
+          // Overdrive Ready Button State
+          if (player.energy >= 100 && !player.isOverdrive) {
+            btnVirtualOverdrive.disabled = false;
+            btnVirtualOverdrive.className = 'col-span-1 h-14 rounded-xl bg-gradient-to-b from-[#ff007f] to-[#ffe600] border-2 border-yellow-300 text-black flex flex-col items-center justify-center animate-overdrive-btn active:scale-95 shadow-[0_0_20px_#ff007f] cursor-pointer transition-all select-none';
+            energyFlashText.classList.remove('opacity-0');
+            energyFlashText.classList.add('opacity-100');
+          } else if (player.isOverdrive) {
+            btnVirtualOverdrive.disabled = true;
+            btnVirtualOverdrive.className = 'col-span-1 h-14 rounded-xl bg-gradient-to-b from-[#ff007f] to-[#9d00ff] border-2 border-[#00f3ff] text-white flex flex-col items-center justify-center shadow-[0_0_15px_#00f3ff] transition-all select-none';
+            energyFlashText.classList.add('opacity-0');
+            energyFlashText.classList.remove('opacity-100');
+          } else {
+            btnVirtualOverdrive.disabled = true;
+            btnVirtualOverdrive.className = 'col-span-1 h-14 rounded-xl bg-gradient-to-b from-[#241029] to-[#120717] border-2 border-gray-700 text-gray-500 flex flex-col items-center justify-center opacity-60 transition-all select-none cursor-not-allowed';
+            energyFlashText.classList.add('opacity-0');
+            energyFlashText.classList.remove('opacity-100');
+          }
+        }
+
+        // ------------------------------------------------------------
+        // 12. CANVAS RENDERING ENGINE (NEON GRAPHICS)
+        // ------------------------------------------------------------
+        function render() {
+          const w = canvas.width / (window.devicePixelRatio || 1);
+          const h = canvas.height / (window.devicePixelRatio || 1);
+
+          ctx.save();
+          ctx.clearRect(0, 0, w, h);
+
+          // Apply screen shake
+          if (screenShake > 0) {
+            ctx.translate(shakeOffsetX, shakeOffsetY);
+          }
+
+          // 1. Sky & Cyber Horizon
+          renderSkyAndCity(w, h);
+
+          // 2. Pseudo-3D Perspective Road
+          renderRoad(w, h);
+
+          // 3. Overdrive Warp Speed Lines
+          if (player.isOverdrive) {
+            renderWarpSpeedLines(w, h);
+          }
+
+          // 4. Entities (Sorted by depth p so far items render behind near items)
+          entities.sort((a, b) => a.p - b.p);
+          for (let i = 0; i < entities.length; i++) {
+            renderEntity(entities[i]);
+          }
+
+          // 5. Player Ship & Trail
+          if (currentState !== GameState.GAMEOVER) {
+            renderPlayer();
+          }
+
+          // 6. Particles & Shockwaves
+          renderParticles();
+
+          // 7. Floating Score/Notice Texts
+          renderFloatingTexts();
+
+          ctx.restore();
+        }
+
+        /**
+         * Renders Cyberpunk Skyline, Neon Grid, and Distant Sun
+         */
+        function renderSkyAndCity(w, h) {
+          // Dark Synthwave Sky Gradient
+          const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
+          skyGrad.addColorStop(0, '#05040f');
+          skyGrad.addColorStop(0.7, '#140c2d');
+          skyGrad.addColorStop(1, '#2c0f45');
+          ctx.fillStyle = skyGrad;
+          ctx.fillRect(0, 0, w, horizonY + 2);
+
+          // Cyber Neon Sun / Horizon Glow
+          const sunX = w * 0.5;
+          const sunY = horizonY;
+          const sunRadius = Math.min(w * 0.22, 55);
+
+          const sunGrad = ctx.createRadialGradient(sunX, sunY, 5, sunX, sunY, sunRadius);
+          sunGrad.addColorStop(0, '#ffe600');
+          sunGrad.addColorStop(0.5, '#ff007f');
+          sunGrad.addColorStop(1, 'rgba(157, 0, 255, 0)');
+
+          ctx.save();
+          ctx.fillStyle = sunGrad;
+          ctx.beginPath();
+          ctx.arc(sunX, sunY, sunRadius, Math.PI, 0); // half sun above horizon
+          ctx.fill();
+
+          // Horizontal blinds / scanlines cut through sun
+          ctx.fillStyle = '#05040f';
+          for (let i = 0; i < 7; i++) {
+            const lineY = sunY - (i * (sunRadius / 7.5));
+            ctx.fillRect(sunX - sunRadius, lineY, sunRadius * 2, 2.5);
+          }
+          ctx.restore();
+
+          // Distant City Skyline Silhouettes
+          ctx.save();
+          ctx.fillStyle = '#09081a';
+          const buildingWidths = [18, 28, 14, 22, 34, 20, 26, 30, 16, 24, 32, 18, 25, 20];
+          let bx = 0;
+          let bIdx = 0;
+          while (bx < w) {
+            const bw = buildingWidths[bIdx % buildingWidths.length];
+            const bh = 15 + ((bIdx * 19) % 35);
+            ctx.fillRect(bx, horizonY - bh, bw, bh);
+
+            // Neon antenna beacon
+            if (bIdx % 3 === 0) {
+              ctx.strokeStyle = '#00f3ff';
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(bx + bw * 0.5, horizonY - bh);
+              ctx.lineTo(bx + bw * 0.5, horizonY - bh - 6);
+              ctx.stroke();
+            }
+            bx += bw + 3;
+            bIdx++;
+          }
+          ctx.restore();
+
+          // Horizon laser light strip
+          ctx.save();
+          ctx.strokeStyle = player.isOverdrive ? '#ff007f' : '#00f3ff';
+          ctx.shadowColor = player.isOverdrive ? '#ff007f' : '#00f3ff';
+          ctx.shadowBlur = 12;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(0, horizonY);
+          ctx.lineTo(w, horizonY);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        /**
+         * Renders 3-Lane Perspective Grid Road with Animated Scrolling Markers
+         */
+        function renderRoad(w, h) {
+          const centerX = w * 0.5;
+
+          // Road Surface Polygon (Trapezoid)
+          const pLeftHorizon = centerX - horizonWidth * 0.5;
+          const pRightHorizon = centerX + horizonWidth * 0.5;
+          const pLeftBottom = centerX - bottomRoadWidth * 0.5;
+          const pRightBottom = centerX + bottomRoadWidth * 0.5;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(pLeftHorizon, horizonY);
+          ctx.lineTo(pRightHorizon, horizonY);
+          ctx.lineTo(pRightBottom, h);
+          ctx.lineTo(pLeftBottom, h);
+          ctx.closePath();
+
+          // Road asphalt fill
+          const roadGrad = ctx.createLinearGradient(0, horizonY, 0, h);
+          roadGrad.addColorStop(0, '#0a0d1f');
+          roadGrad.addColorStop(1, '#05060f');
+          ctx.fillStyle = roadGrad;
+          ctx.fill();
+
+          // Outer Neon Border Guardrails
+          ctx.strokeStyle = player.isOverdrive ? '#ff007f' : '#00f3ff';
+          ctx.shadowColor = player.isOverdrive ? '#ff007f' : '#00f3ff';
+          ctx.shadowBlur = 15;
+          ctx.lineWidth = 3.5;
+
+          // Left rail
+          ctx.beginPath();
+          ctx.moveTo(pLeftHorizon, horizonY);
+          ctx.lineTo(pLeftBottom, h);
+          ctx.stroke();
+
+          // Right rail
+          ctx.beginPath();
+          ctx.moveTo(pRightHorizon, horizonY);
+          ctx.lineTo(pRightBottom, h);
+          ctx.stroke();
+
+          // Moving Perspective Horizontal Grid Lines
+          // Creates fast-paced forward motion illusion
+          const scrollOffset = (distance * 0.12) % 1;
+          const numLines = 14;
+
+          ctx.lineWidth = 1.2;
+          ctx.shadowBlur = 4;
+          for (let i = 0; i < numLines; i++) {
+            const rawP = (i + scrollOffset) / numLines;
+            const curvedP = Math.pow(rawP, 2.2);
+            const lineY = horizonY + curvedP * (h - horizonY);
+
+            const curW = horizonWidth + (bottomRoadWidth - horizonWidth) * curvedP;
+            const lx1 = centerX - curW * 0.5;
+            const lx2 = centerX + curW * 0.5;
+
+            ctx.strokeStyle = `rgba(0, 243, 255, ${0.1 + curvedP * 0.55})`;
+            ctx.beginPath();
+            ctx.moveTo(lx1, lineY);
+            ctx.lineTo(lx2, lineY);
+            ctx.stroke();
+          }
+
+          // 2 Internal Lane Dividers (Dashed Glowing Lines separating Left, Center, Right)
+          // Lane dividers at -0.5 and +0.5 lane coords
+          [-0.5, 0.5].forEach(laneBorder => {
+            ctx.save();
+            ctx.strokeStyle = player.isOverdrive ? '#ffe600' : '#ff007f';
+            ctx.shadowColor = player.isOverdrive ? '#ffe600' : '#ff007f';
+            ctx.shadowBlur = 8;
+            ctx.lineWidth = 2;
+
+            // Draw dashed segments moving downwards
+            const numDashes = 10;
+            for (let d = 0; d < numDashes; d++) {
+              const startP = (d + scrollOffset) / numDashes;
+              const endP = startP + 0.05;
+
+              if (startP >= 0 && startP <= 1) {
+                const pt1 = project3D(laneBorder, startP);
+                const pt2 = project3D(laneBorder, Math.min(1.0, endP));
+
+                ctx.beginPath();
+                ctx.moveTo(pt1.x, pt1.y);
+                ctx.lineTo(pt2.x, pt2.y);
+                ctx.stroke();
+              }
+            }
+            ctx.restore();
+          });
+
+          ctx.restore();
+        }
+
+        /**
+         * Renders Hyperspace / Warp Speed Lines during Overdrive Dash
+         */
+        function renderWarpSpeedLines(w, h) {
+          ctx.save();
+          ctx.shadowBlur = 10;
+          for (let i = 0; i < warpLines.length; i++) {
+            const line = warpLines[i];
+            line.y += line.speed * 0.035;
+            if (line.y > 1) {
+              line.y = 0;
+              line.x = Math.random();
+            }
+
+            const lx = line.x * w;
+            const ly = horizonY + line.y * (h - horizonY);
+            const lineLen = line.length * (0.5 + line.y * 1.5);
+
+            ctx.strokeStyle = line.color;
+            ctx.shadowColor = line.color;
+            ctx.lineWidth = 1.5 + line.y * 2.0;
+
+            ctx.beginPath();
+            ctx.moveTo(lx, ly);
+            ctx.lineTo(lx, ly + lineLen);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+
+        /**
+         * Renders Player Cyber Hovercraft & Holographic After-Image Trail
+         */
+        function renderPlayer() {
+          const px = player.x;
+          const py = player.y;
+
+          // 1. Render Holographic Trail After-Images
+          ctx.save();
+          for (let i = player.trailHistory.length - 1; i >= 0; i--) {
+            const tr = player.trailHistory[i];
+            const trAlpha = (1 - (i / player.trailHistory.length)) * (player.isOverdrive ? 0.45 : 0.2);
+            ctx.save();
+            ctx.translate(tr.x, tr.y);
+            ctx.rotate(tr.angle);
+            ctx.fillStyle = player.isOverdrive ? `rgba(255, 0, 127, ${trAlpha})` : `rgba(0, 243, 255, ${trAlpha})`;
+            drawShipHull(ctx, player.width * 0.9, player.height * 0.9);
+            ctx.restore();
+          }
+          ctx.restore();
+
+          // 2. Render Main Player Ship
+          ctx.save();
+          ctx.translate(px, py);
+          ctx.rotate(player.tiltAngle);
+
+          // Ship Neon Glow Aura
+          ctx.shadowColor = player.isOverdrive ? '#ffe600' : '#00f3ff';
+          ctx.shadowBlur = player.isOverdrive ? 26 : 14;
+
+          // Main Chassis
+          ctx.fillStyle = '#080d24';
+          ctx.strokeStyle = player.isOverdrive ? '#ff007f' : '#00f3ff';
+          ctx.lineWidth = 2.5;
+          drawShipHull(ctx, player.width, player.height, true);
+
+          // Cockpit Windshield (Glowing Glass)
+          ctx.fillStyle = player.isOverdrive ? '#ffe600' : '#00f3ff';
+          ctx.beginPath();
+          ctx.moveTo(0, -player.height * 0.25);
+          ctx.lineTo(player.width * 0.18, 0);
+          ctx.lineTo(0, player.height * 0.15);
+          ctx.lineTo(-player.width * 0.18, 0);
+          ctx.closePath();
+          ctx.fill();
+
+          // Dual Engine Thruster Flames
+          const flameH = (player.isOverdrive ? 24 : 14) + Math.random() * 8;
+          ctx.fillStyle = player.isOverdrive ? '#ffe600' : '#00f3ff';
+          ctx.shadowColor = player.isOverdrive ? '#ff007f' : '#00f3ff';
+          ctx.shadowBlur = 12;
+
+          // Left thruster flame
+          ctx.beginPath();
+          ctx.moveTo(-player.width * 0.3, player.height * 0.38);
+          ctx.lineTo(-player.width * 0.22, player.height * 0.38 + flameH);
+          ctx.lineTo(-player.width * 0.14, player.height * 0.38);
+          ctx.fill();
+
+          // Right thruster flame
+          ctx.beginPath();
+          ctx.moveTo(player.width * 0.14, player.height * 0.38);
+          ctx.lineTo(player.width * 0.22, player.height * 0.38 + flameH);
+          ctx.lineTo(player.width * 0.3, player.height * 0.38);
+          ctx.fill();
+
+          // Overdrive Shield Barrier
+          if (player.isOverdrive) {
+            ctx.strokeStyle = '#ffe600';
+            ctx.shadowColor = '#ffe600';
+            ctx.shadowBlur = 20;
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, player.height * 0.75, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+
+          ctx.restore();
+        }
+
+        function drawShipHull(context, w, h, stroke = false) {
+          context.beginPath();
+          // Futuristic arrowhead interceptor
+          context.moveTo(0, -h * 0.5);                 // Nose tip
+          context.lineTo(w * 0.48, h * 0.32);          // Right wing tip
+          context.lineTo(w * 0.28, h * 0.42);          // Right inner thruster
+          context.lineTo(w * 0.15, h * 0.35);          // Center rear
+          context.lineTo(-w * 0.15, h * 0.35);
+          context.lineTo(-w * 0.28, h * 0.42);         // Left inner thruster
+          context.lineTo(-w * 0.48, h * 0.32);         // Left wing tip
+          context.closePath();
+          context.fill();
+          if (stroke) context.stroke();
+        }
+
+        /**
+         * Renders Individual Entities (Obstacles, Orbs, Chips)
+         */
+        function renderEntity(ent) {
+          if (ent.hit && ent.isObstacle) return; // Destroyed in Overdrive
+
+          ctx.save();
+          ctx.translate(ent.x, ent.y);
+          ctx.scale(ent.scale, ent.scale);
+
+          if (ent.isObstacle) {
+            // ---------------- OBSTACLES ----------------
+            if (ent.type === 'wall') {
+              // Cyber Neon Brick Wall Barrier
+              const bw = 54;
+              const bh = 34;
+
+              ctx.shadowColor = '#ff0055';
+              ctx.shadowBlur = 16;
+              ctx.fillStyle = '#1c0512';
+              ctx.strokeStyle = '#ff0055';
+              ctx.lineWidth = 2.5;
+
+              ctx.beginPath();
+              ctx.rect(-bw * 0.5, -bh * 0.5, bw, bh);
+              ctx.fill();
+              ctx.stroke();
+
+              // Hazard Diagonal Stripes
+              ctx.fillStyle = '#ff0055';
+              for (let i = -bw * 0.4; i < bw * 0.4; i += 14) {
+                ctx.beginPath();
+                ctx.moveTo(i, -bh * 0.4);
+                ctx.lineTo(i + 8, bh * 0.4);
+                ctx.lineTo(i + 4, bh * 0.4);
+                ctx.lineTo(i - 4, -bh * 0.4);
+                ctx.fill();
+              }
+
+              // Warning Core Beacon
+              ctx.fillStyle = '#ffffff';
+              ctx.beginPath();
+              ctx.arc(0, 0, 4, 0, Math.PI * 2);
+              ctx.fill();
+
+            } else if (ent.type === 'laser') {
+              // High-Voltage Pulsing Dual-Pylon Laser Grid
+              const pylonDist = 28;
+              ctx.shadowColor = '#ff0033';
+              ctx.shadowBlur = 18;
+
+              // Left & Right Emitter Pylons
+              [-pylonDist, pylonDist].forEach(px => {
+                ctx.fillStyle = '#0a0d24';
+                ctx.strokeStyle = '#ff0033';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.rect(px - 5, -18, 10, 36);
+                ctx.fill();
+                ctx.stroke();
+
+                // Emitter tip
+                ctx.fillStyle = '#ff0033';
+                ctx.beginPath();
+                ctx.arc(px, 0, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+              });
+
+              // Laser Beam spanning between pylons
+              ctx.strokeStyle = '#ffffff';
+              ctx.lineWidth = 3.5 + Math.sin(performance.now() * 0.02) * 1.5;
+              ctx.beginPath();
+              ctx.moveTo(-pylonDist + 5, 0);
+              ctx.lineTo(pylonDist - 5, 0);
+              ctx.stroke();
+
+              ctx.strokeStyle = '#ff0033';
+              ctx.lineWidth = 8;
+              ctx.stroke();
+
+            } else if (ent.type === 'barrier') {
+              // Plasma Spikes / Rotating Cyber Barrier
+              const spin = performance.now() * 0.003;
+              ctx.shadowColor = '#9d00ff';
+              ctx.shadowBlur = 18;
+
+              ctx.rotate(spin);
+              ctx.strokeStyle = '#9d00ff';
+              ctx.fillStyle = '#18072b';
+              ctx.lineWidth = 2.5;
+
+              // 4 Spikes
+              for (let s = 0; s < 4; s++) {
+                ctx.save();
+                ctx.rotate((s * Math.PI) / 2);
+                ctx.beginPath();
+                ctx.moveTo(-8, 0);
+                ctx.lineTo(0, -26);
+                ctx.lineTo(8, 0);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+              }
+
+              // Center reactor core
+              ctx.fillStyle = '#00f3ff';
+              ctx.beginPath();
+              ctx.arc(0, 0, 6, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+          } else {
+            // ---------------- COLLECTIBLES ----------------
+            if (ent.type === 'orb') {
+              // Energy Orb (Pulsing glowing sphere + orbiting rings)
+              const pulse = Math.sin(performance.now() * 0.006) * 2;
+              const radius = 13 + pulse;
+
+              ctx.shadowColor = '#00f3ff';
+              ctx.shadowBlur = 20;
+
+              // Outer Orbit Ring
+              ctx.save();
+              ctx.rotate(performance.now() * 0.004);
+              ctx.strokeStyle = '#00f3ff';
+              ctx.lineWidth = 1.8;
+              ctx.beginPath();
+              ctx.ellipse(0, 0, radius * 1.4, radius * 0.6, 0, 0, Math.PI * 2);
+              ctx.stroke();
+              ctx.restore();
+
+              // Inner Glowing Sphere
+              const grad = ctx.createRadialGradient(0, 0, 2, 0, 0, radius);
+              grad.addColorStop(0, '#ffffff');
+              grad.addColorStop(0.4, '#00f3ff');
+              grad.addColorStop(1, 'rgba(0, 243, 255, 0.2)');
+              ctx.fillStyle = grad;
+              ctx.beginPath();
+              ctx.arc(0, 0, radius, 0, Math.PI * 2);
+              ctx.fill();
+
+            } else if (ent.type === 'chip') {
+              // Multiplier Microchip (Gold holographic diamond)
+              ctx.shadowColor = '#ffe600';
+              ctx.shadowBlur = 20;
+              ctx.rotate(performance.now() * 0.003);
+
+              ctx.fillStyle = '#262005';
+              ctx.strokeStyle = '#ffe600';
+              ctx.lineWidth = 2.2;
+
+              ctx.beginPath();
+              ctx.moveTo(0, -16);
+              ctx.lineTo(16, 0);
+              ctx.lineTo(0, 16);
+              ctx.lineTo(-16, 0);
+              ctx.closePath();
+              ctx.fill();
+              ctx.stroke();
+
+              // Chip center glyph
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 11px Orbitron';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('2X', 0, 0);
+            }
+          }
+
+          ctx.restore();
+        }
+
+        /**
+         * Renders Particle Effects & Shockwave Rings
+         */
+        function renderParticles() {
+          ctx.save();
+          for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
+            if (p.isRing) {
+              ctx.strokeStyle = p.color;
+              ctx.shadowColor = p.color;
+              ctx.shadowBlur = 10;
+              ctx.lineWidth = 3;
+              ctx.globalAlpha = p.alpha;
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+              ctx.stroke();
+            } else {
+              ctx.fillStyle = p.color;
+              ctx.shadowColor = p.color;
+              ctx.shadowBlur = 8;
+              ctx.globalAlpha = p.alpha;
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+          ctx.restore();
+        }
+
+        /**
+         * Renders Floating Pop-Up Scores / Status Texts
+         */
+        function renderFloatingTexts() {
+          ctx.save();
+          ctx.font = 'bold 13px Orbitron';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          for (let i = 0; i < floatingTexts.length; i++) {
+            const ft = floatingTexts[i];
+            ctx.fillStyle = ft.color;
+            ctx.shadowColor = ft.color;
+            ctx.shadowBlur = 8;
+            ctx.globalAlpha = ft.alpha;
+            ctx.fillText(ft.text, ft.x, ft.y);
+          }
+          ctx.restore();
+        }
+
+        // ------------------------------------------------------------
+        // 13. MAIN ANIMATION LOOP (requestAnimationFrame)
+        // ------------------------------------------------------------
+        function gameLoop(now) {
+          const dt = Math.min((now - lastTime) / 1000, 0.1); // Clamp max dt to avoid tunneling
+          lastTime = now;
+
+          update(dt);
+          render();
+
+          requestAnimationFrame(gameLoop);
+        }
+
+        // ------------------------------------------------------------
+        // 14. UI EVENT ATTACHMENTS & INITIALIZATION
+        // ------------------------------------------------------------
+        // Menu Buttons
+        btnStartGame.addEventListener('click', startNewGame);
+        
+        btnHowToPlay.addEventListener('click', () => {
+          initAudio();
+          playSfxClick();
+          modalHowToPlay.classList.remove('hidden');
+          modalHowToPlay.classList.add('flex');
+        });
+        btnCloseHowToPlay.addEventListener('click', () => {
+          playSfxClick();
+          modalHowToPlay.classList.add('hidden');
+          modalHowToPlay.classList.remove('flex');
+        });
+        btnHowToPlayOk.addEventListener('click', () => {
+          playSfxClick();
+          modalHowToPlay.classList.add('hidden');
+          modalHowToPlay.classList.remove('flex');
+        });
+
+        btnSoundSettings.addEventListener('click', () => {
+          initAudio();
+          playSfxClick();
+          modalSoundSettings.classList.remove('hidden');
+          modalSoundSettings.classList.add('flex');
+        });
+        btnCloseSoundSettings.addEventListener('click', () => {
+          playSfxClick();
+          modalSoundSettings.classList.add('hidden');
+          modalSoundSettings.classList.remove('flex');
+        });
+        btnSaveSoundSettings.addEventListener('click', () => {
+          playSfxClick();
+          modalSoundSettings.classList.add('hidden');
+          modalSoundSettings.classList.remove('flex');
+        });
+
+        btnToggleAudioModal.addEventListener('click', () => {
+          initAudio();
+          playSfxClick();
+          setAudioMute(!audioMuted);
+        });
+
+        sliderBgmVolume.addEventListener('input', (e) => {
+          bgmVolume = parseFloat(e.target.value) / 100;
+          bgmVolumeText.textContent = `${e.target.value}%`;
+          localStorage.setItem('cyber_runner_bgm_vol', bgmVolume.toString());
+          if (bgmGain && audioCtx) {
+            bgmGain.gain.setValueAtTime(bgmVolume, audioCtx.currentTime);
+          }
+        });
+
+        sliderSfxVolume.addEventListener('input', (e) => {
+          sfxVolume = parseFloat(e.target.value) / 100;
+          sfxVolumeText.textContent = `${e.target.value}%`;
+          localStorage.setItem('cyber_runner_sfx_vol', sfxVolume.toString());
+          if (sfxGain && audioCtx) {
+            sfxGain.gain.setValueAtTime(sfxVolume, audioCtx.currentTime);
+          }
+        });
+
+        // Pause Menu Buttons
+        btnResumeGame.addEventListener('click', togglePause);
+        btnRestartFromPause.addEventListener('click', startNewGame);
+        btnMenuFromPause.addEventListener('click', returnToMenu);
+
+        // Game Over Buttons
+        btnPlayAgain.addEventListener('click', startNewGame);
+        btnGameOverMenu.addEventListener('click', returnToMenu);
+
+        // Audio Context Auto-Unlock on any user interaction
+        ['pointerdown', 'keydown', 'touchstart'].forEach(evt => {
+          window.addEventListener(evt, () => {
+            initAudio();
+          }, { once: false, passive: true });
+        });
+
+        // Initialize state & display
+        menuHighScore.textContent = highScore.toString().padStart(6, '0');
+        updateAudioUI();
+        resizeCanvas();
+
+        // Boot Animation Loop
+        requestAnimationFrame((now) => {
+          lastTime = now;
+          requestAnimationFrame(gameLoop);
+        });
+
+      })();
+    </script>
+  </body>
+</html>
